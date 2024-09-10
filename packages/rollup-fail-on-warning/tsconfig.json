@@ -1,0 +1,22 @@
+{
+  "extends": "@gptmmo/tsconfig/configs/base.json",
+
+  "compilerOptions": {
+    "lib": ["es6"],
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "rootDir": "src",
+
+    // Do not emit compiler output files like JavaScript source code,
+    // source-maps or declarations. This makes room for another tool like Babel,
+    // or swc to handle converting the TypeScript file to a file which can
+    // run inside a JavaScript environment.
+    "noEmit": true
+  },
+
+  "include": ["**/*.ts", "src"],
+  "exclude": ["node_modules"]
+}

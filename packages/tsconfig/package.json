@@ -1,0 +1,25 @@
+{
+  "name": "@gptmmo/tsconfig",
+  "version": "1.0.0",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "scripts": {
+    "lint": "concurrently npm:lint:*",
+    "lint:depcheck": "depcheck",
+    "lint:eslint": "eslint . --max-warnings=0",
+    "lint:prettier": "prettier . --check",
+    "format": "npm run format:eslint && npm run format:prettier",
+    "format:prettier": "prettier . --write",
+    "format:eslint": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@gptmmo/style": "*",
+    "concurrently": "7.6.0",
+    "depcheck": "1.4.7",
+    "eslint": "8.35.0",
+    "prettier": "2.8.4"
+  }
+}

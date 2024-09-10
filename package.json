@@ -1,0 +1,19 @@
+{
+  "name": "gptmmo",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "initialize": "npm install && npm run clean && lerna bootstrap --hoist",
+    "initialize-ci": "npm install && lerna bootstrap --hoist",
+    "clean": "lerna clean --yes && lerna exec -- rm -rf dist .rollup.cache .tmp tsconfig.tsbuildinfo && nx reset",
+    "refresh": "lerna bootstrap",
+    "build": "lerna run local:build --stream",
+    "test": "lerna run local:test --stream --no-parallel",
+    "lint": "lerna run lint --stream --parallel",
+    "format": "lerna run format --stream --parallel"
+  },
+  "devDependencies": {
+    "lerna": "6.5.1",
+    "nx": "15.9.4"
+  }
+}

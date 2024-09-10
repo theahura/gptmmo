@@ -1,0 +1,3 @@
+- Create a schema for a mongo collection that stores off text based on some coordinates
+- Test writing to mongo for created rooms
+- Test pulling from mongo to update a room

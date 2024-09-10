@@ -1,0 +1,3 @@
+{
+  "ignore": "dist|.tmp|src/index.ts"
+}

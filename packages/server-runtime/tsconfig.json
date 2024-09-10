@@ -1,0 +1,17 @@
+{
+  "extends": "@gptmmo/tsconfig/configs/utility.json",
+
+  "compilerOptions": {
+    "lib": ["es6"],
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+
+  "include": ["src"],
+  "exclude": ["node_modules", "**/__tests__"]
+}

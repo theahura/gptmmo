@@ -1,0 +1,4 @@
+{
+  "ignores": ["tslib"],
+  "specials": ["bin", "eslint", "prettier"]
+}

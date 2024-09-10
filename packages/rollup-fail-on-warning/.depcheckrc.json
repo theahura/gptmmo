@@ -1,0 +1,4 @@
+{
+  "ignores": ["@hearth/configs.typescript", "typescript", "tslib"],
+  "specials": ["bin", "eslint", "prettier"]
+}

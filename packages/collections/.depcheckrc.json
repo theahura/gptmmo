@@ -1,0 +1,5 @@
+{
+  "ignores": ["@babel/runtime", "@types/events", "humanize-duration"],
+  "ignorePatterns": [".rollup.cache", ".tmp", "dist"],
+  "specials": ["bin", "eslint", "prettier", "babel", "jest"]
+}

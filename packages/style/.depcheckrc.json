@@ -1,0 +1,4 @@
+{
+  "specials": ["bin", "eslint", "prettier"],
+  "ignores": ["eslint-import-resolver-typescript"]
+}

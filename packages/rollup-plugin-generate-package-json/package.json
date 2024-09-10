@@ -1,0 +1,39 @@
+{
+  "name": "@gptmmo/rollup-plugin-generate-package-json",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "dist/index.cjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "lerna run local:build --stream --scope @gptmmo/rollup-plugin-generate-package-json",
+    "local:build": "rollup -c",
+    "lint": "concurrently npm:lint:*",
+    "lint:deadcode": "ts-prune -e | (! grep -v 'used in module')",
+    "lint:depcheck": "depcheck",
+    "lint:eslint": "eslint . --max-warnings=0",
+    "lint:prettier": "prettier . --check",
+    "format": "npm run format:eslint && npm run format:prettier",
+    "format:prettier": "prettier . --write",
+    "format:eslint": "eslint . --fix"
+  },
+  "dependencies": {
+    "chalk": "4.1.2",
+    "rollup": "3.26.2",
+    "tslib": "2.5.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "9.0.2",
+    "@gptmmo/style": "*",
+    "@gptmmo/tsconfig": "*",
+    "@types/node": "22.2.0",
+    "concurrently": "7.6.0",
+    "depcheck": "1.4.7",
+    "eslint": "8.35.0",
+    "prettier": "2.8.4",
+    "ts-prune": "0.10.3",
+    "typescript": "4.7.2"
+  }
+}

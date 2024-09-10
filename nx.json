@@ -1,0 +1,73 @@
+// The NX config is important to configure our Lerna tooling (NX is the
+// successor of Lerna and many features of NX are backported to Lerna).
+//
+// See https://nx.dev/reference/nx-json
+{
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        // Caching is painful and complicated, if you're modifying our caching
+        // options please familiarize yourself with the documentation.
+        //
+        // See https://nx.dev/concepts/how-caching-works
+        "cacheableOperations": ["local:build", "local:test", "lint"]
+      }
+    }
+  },
+
+  "targetDefaults": {
+    "local:build": {
+      "dependsOn": ["^local:build"],
+      "inputs": [
+        "buildSourcesOnly",
+        // It's important that we invalidate the build cache whenever a
+        // dependency's build sources change. You'd think that the `dependsOn`
+        // list would automatically invalidate caches when dependencies get,
+        // built but it does not. Instead this line achieves that behavior.
+        "^buildSourcesOnly",
+        "sharedGlobals"
+      ],
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "local:start": {
+      "dependsOn": ["^local:build"]
+    },
+    "local:test": {
+      "dependsOn": ["^local:build"],
+      "inputs": [
+        // We invalidate the test cache whenever a file changes for this
+        // package. This is a lot slower when compared with our build cache
+        // inputs, but we do this to ensure that tests are always "correct".
+        "allPackageFiles",
+        // It's important that we invalidate the test cache whenever a
+        // dependency's build sources change. You'd think that the `dependsOn`
+        // list would automatically invalidate caches when dependencies get,
+        // built but it does not. Instead this line achieves that behavior.
+        "^buildSourcesOnly",
+        "sharedGlobals"
+      ]
+    },
+    "lint": {
+      "inputs": ["allPackageFiles", "sharedGlobals"]
+    }
+  },
+
+  "namedInputs": {
+    // Enumerates all files which are shared / impact all packages.
+    "sharedGlobals": ["{workspaceRoot}/package.lock.json"],
+
+    // Enumerates all files contained by a package.
+    "allPackageFiles": ["{projectRoot}/**/*"],
+
+    // Enumerates all files which would alter the build result of a package.
+    // Note that this list needs to be valid for libraries, node binaries, and
+    // frontends. As a result, it's a union of all build patterns we use across
+    // the repo
+    "buildSourcesOnly": [
+      "{projectRoot}/src/**/*",
+      "{projectRoot}/**/rollup.config.js",
+      "{projectRoot}/**/tsconfig.json"
+    ]
+  }
+}

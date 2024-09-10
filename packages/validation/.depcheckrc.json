@@ -1,0 +1,13 @@
+{
+  "ignores": [
+    "@babel/runtime",
+    "@hearth/configs.typescript",
+    "@types/jest",
+    "assert",
+    "rollup",
+    "tslib",
+    "typescript"
+  ],
+  "ignorePatterns": [".rollup.cache", ".tmp", "dist"],
+  "specials": ["bin", "eslint", "prettier", "babel", "jest"]
+}

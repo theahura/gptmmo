@@ -1,0 +1,5 @@
+{
+  "ignores": ["@babel/runtime"],
+  "ignorePatterns": [".rollup.cache", ".tmp", "dist"],
+  "specials": ["bin", "eslint", "prettier", "babel", "jest"]
+}

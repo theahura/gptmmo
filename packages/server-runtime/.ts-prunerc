@@ -1,0 +1,3 @@
+{
+  "ignore": "dist|.tmp|.rollup.cache|src/index.ts"
+}

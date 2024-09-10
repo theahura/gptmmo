@@ -1,0 +1,5 @@
+{
+  "ignores": ["@hearth/configs.typescript", "rollup", "tslib", "typescript"],
+  "ignorePatterns": [".rollup.cache", ".tmp", "dist"],
+  "specials": ["bin", "eslint", "prettier"]
+}
