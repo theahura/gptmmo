@@ -5,5 +5,5 @@ export type Room = {
   name: string;
   description: string;
   lastUpdated: number;
-  connectedTo: Array<primaryKeys.Room>;
+  connections: Record<string, primaryKeys.Room>;
 };

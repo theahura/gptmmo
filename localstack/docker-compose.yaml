@@ -1,0 +1,9 @@
+# When you use multiple Compose files, you must make sure all paths in the files
+# are relative to the base Compose file (the first Compose file specified with
+# -f). For this reason we MUST have a docker-compose file at the root of the
+# localstack directory even if all it does is declare the project name.
+#
+# See https://docs.docker.com/compose/multiple-compose-files/merge/
+
+version: "3"
+name: "gptmmo"

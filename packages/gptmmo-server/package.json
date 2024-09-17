@@ -21,6 +21,8 @@
     "@gptmmo/ts-extensions": "*",
     "@gptmmo/persistence": "*",
     "@gptmmo/server-runtime": "*",
+    "@gptmmo/status": "*",
+    "@inquirer/prompts": "5.5.0",
     "together-ai": "0.6.0-alpha.4"
   },
   "devDependencies": {

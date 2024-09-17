@@ -46,3 +46,6 @@ __diff_output__/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Terraform
+**/.terraform/*

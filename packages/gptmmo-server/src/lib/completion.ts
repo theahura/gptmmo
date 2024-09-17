@@ -14,8 +14,6 @@ export type Message = {
   content: string;
 };
 
-export type Session = Array<Message>;
-
 export const completePrompt = async (args: {
   prompt: string;
   systemContext?: string;
@@ -23,7 +21,7 @@ export const completePrompt = async (args: {
 }): Promise<CompletionStream> => {
   const { prompt, previousMessages, systemContext } = args;
 
-  const messages: Array<together.Together.Chat.Completions.CompletionCreateParams.Message> =
+  let messages: Array<together.Together.Chat.Completions.CompletionCreateParams.Message> =
     [];
 
   if (systemContext != null) {
@@ -31,7 +29,7 @@ export const completePrompt = async (args: {
   }
 
   if (previousMessages != null) {
-    messages.concat(previousMessages);
+    messages = messages.concat(previousMessages);
   }
 
   messages.push({ role: 'user', content: prompt });
@@ -39,7 +37,33 @@ export const completePrompt = async (args: {
   return client.chat.completions.create({
     messages,
     model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    max_tokens: 512,
+    temperature: 0.7,
+    top_p: 0.7,
+    top_k: 50,
+    repetition_penalty: 1,
     stop: ['<|eot_id|>', '<|eom_id|>'],
     stream: true,
   });
+};
+
+export const streamToString = async (
+  stream: CompletionStream,
+): Promise<string> => streamMap(stream, () => {});
+
+export const streamToLog = async (stream: CompletionStream): Promise<string> =>
+  streamMap(stream, (chunk) => {
+    process.stdout.write(chunk.choices[0].delta.content ?? '');
+  });
+
+export const streamMap = async (
+  stream: CompletionStream,
+  fn: (chunk: together.Together.Chat.ChatCompletionChunk) => void,
+): Promise<string> => {
+  let result = '';
+  for await (const chunk of stream) {
+    fn(chunk);
+    result += chunk.choices[0].delta.content;
+  }
+  return result;
 };

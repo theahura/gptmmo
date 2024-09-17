@@ -1,17 +1,19 @@
-import * as completion from '@/completion';
-import * as format from '@/format';
+import * as completion from '@/lib/completion';
+import * as format from '@/lib/format';
+
+import type * as session from '@/session';
 
 const CONTEXT =
   'You are a text adventure simulator. You simulate a basic dnd-style dungeon. There is no fixed story or end to the dungeon. As the simulator or dungeon master, you respond to what the player character wants to do by outputting additional text that describes the updated situation. You should aim to respond dynamically to what the player is doing, while also retaining as much state as possible from one output to the next.';
 
 const PROMPT =
-  'Please treat all previous messages, if there are any, as context for what the player has done so far. The player has previously been in a room with the following description: <DESCRIPTION>. The following amount of time has passed: <TIME>. In that time, the following major events have occurred: <EVENTS>. Given the above, please update the description of the room. Note that events or time passing may have changed the room in some way, or may have left it exactly the same.';
+  'Please treat all previous messages, if there are any, as context for what the player has done so far. The player has previously been in a room with the following description: ```<DESCRIPTION>```. The following amount of time has passed: `<TIME>`. In that time, the following major events have occurred: ```<EVENTS>```. Given the above, please update the description of the room. Only output the updated description of the room.';
 
-export function updateRoom(args: {
+export function ageRoom(args: {
   description: string;
   timePassed: string;
   events?: Array<string>;
-  session?: completion.Session;
+  session?: session.Session;
 }) {
   const { description, timePassed, events, session } = args;
 

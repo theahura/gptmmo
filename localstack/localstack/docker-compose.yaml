@@ -1,0 +1,51 @@
+version: "3"
+services:
+  # Note that it would be more faithful to our production environment to instead
+  # emulate DocDB locally with localstack, however, DocDB is gated behind a
+  # localstack paywall. Instead we use mongodb pinned to the version DocDB
+  # claims to be roughly compatible with.
+  localstack-mongodb:
+    image: mongo:4.4.21
+    container_name: localstack-mongodb
+    ports:
+      - "27017:27017"
+    command: mongod --replSet rs0
+
+    # Enable interactive mode
+    stdin_open: true
+
+    # Allocate a pseudo-TTY
+    tty: true
+
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    environment:
+      # Enables debug logs in the localstack docker container. Viewable with:
+      # `docker logs localstack -f`
+     - DEBUG=1
+
+     # Localstack does not properly configure the LD_LIBRARY_PATH env variable,
+     # which OpenSearch relies on to find the jvm libraries for knn search.
+     # We hard code that here.
+     # See: https://github.com/localstack/localstack/issues/9193
+     - LD_LIBRARY_PATH=/var/lib/localstack/lib/opensearch/OpenSearch_2.5/plugins/opensearch-knn/lib
+
+     # By default, OpenSearch uses a cname based pathing strategy akin to s3.
+     # This works fine in production, but locally this makes interacting with
+     # OpenSearch from a space-session really difficult.
+     #
+     # Localstack implements cname routing through the
+     # localhost.localstack.cloud domain. That domain is an external DNS, but
+     # it is mapped to localhost, such that any cnames are 'translated' to a
+     # localhost route. Unfortunately, space-session doesn't route directly
+     # externally -- it uses a separate gateway (the plane gateway) and urls
+     # need to be routed through there. As a result, the cname translation
+     # doesnt work as expected.
+     #
+     # To get around this, localstack allows us to route to opensearch using
+     # a tranditional path instead of with cnames.
+     - OPENSEARCH_ENDPOINT_STRATEGY=path
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
