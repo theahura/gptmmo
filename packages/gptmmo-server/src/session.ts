@@ -114,6 +114,9 @@ export const runSession = async (args: {
     });
     const response = await completion.streamToLog(completionStream);
 
+    messages.push({ role: 'user', content: message });
+    messages.push({ role: 'assistant', content: response });
+
     /// Process the LLM feedback, primarily doing things like storing or
     /// updating state or pulling in more context.
 
@@ -138,17 +141,13 @@ export const runSession = async (args: {
     //  - load the connected rooms into the context
     // If no:
     //  - create a new room, give it a name, and connect it to the current room
-
-    const maybeDidRoomChange = null;
+    const maybeDidRoomChange = status.fromValue(null);
     if (!status.isOk(maybeDidRoomChange)) {
       return maybeDidRoomChange;
     }
     const didRoomChange = maybeDidRoomChange.value;
 
-    if (!didRoomChange) {
+    if (didRoomChange) {
     }
-
-    messages.push({ role: 'user', content: message });
-    messages.push({ role: 'assistant', content: response });
   }
 };
