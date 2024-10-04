@@ -1,7 +1,6 @@
 import * as status from '@gptmmo/status';
 import * as date from '@/lib/date';
 import * as prompts from '@/prompts';
-import * as completion from '@/lib/completion';
 import type * as context from '@/context';
 import type * as persistence from '@gptmmo/persistence';
 import type * as session from '@/session';
@@ -29,16 +28,23 @@ export const loadRoom = async (args: {
 
   let room: persistence.Room;
   if (!status.isOk(maybeStartingRoom)) {
-    const roomDescription = await completion.streamToString(
-      await prompts.createRoom({ session }),
-    );
+    const maybeRoomDescription = await prompts.createRoom({ session });
+    if (!status.isOk(maybeRoomDescription)) {
+      return maybeRoomDescription;
+    }
+    const roomDescription = maybeRoomDescription.value;
+
+    const maybeRoomName = await prompts.roomNameFromDescription({
+      roomDescription,
+    });
+    if (!status.isOk(maybeRoomName)) {
+      return maybeRoomName;
+    }
+    const roomName = maybeRoomName.value;
+
     room = {
       _id: [x, y, z].join('-'),
-      name: await completion.streamToString(
-        await prompts.roomNameFromDescription({
-          roomDescription,
-        }),
-      ),
+      name: roomName,
       description: roomDescription,
       x,
       y,
@@ -57,13 +63,17 @@ export const loadRoom = async (args: {
       new Date(),
       new Date(room.lastUpdated),
     );
-    const roomDescription = await completion.streamToString(
-      await prompts.ageRoom({
-        description: room.description,
-        timePassed,
-        session,
-      }),
-    );
+
+    const maybeRoomDescription = await prompts.ageRoom({
+      description: room.description,
+      timePassed,
+      session,
+    });
+    if (!status.isOk(maybeRoomDescription)) {
+      return maybeRoomDescription;
+    }
+    const roomDescription = maybeRoomDescription.value;
+
     room = {
       ...room,
       description: roomDescription,

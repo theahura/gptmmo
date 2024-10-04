@@ -1,18 +1,27 @@
 import * as completion from '@/lib/completion';
+import * as format from '@/lib/format';
 
 import type * as session from '@/session';
 
 const CONTEXT =
-  'You are a module in a text adventure simulator. You work with many other modules that each operate a specific portion of the text adventure simulation. The simulation is persistent over time, and many players exist in the same simulation. Your role in the larger system is to respond to the player. Your goal is to create engaging and fun responses. There is no fixed story or end to the dungeon. As the simulator, you respond to what the player character wants to do by outputting additional text that describes the updated situation. You should respond like a real DM. That means sometimes disagreeing with or preventing the player from taking certain actions. You should aim to respond dynamically to what the player is doing. It is critical to maintain immersion. You must try to retain as much state as possible from one output to the next. Use the previous messages as context. Previous actions taken by the system are denoted with the prefix "ACTION[ACTION-NAME]: ". Previous actions taken by the user are denoted with the prefix "USER: ". The module prompt will be denoted with the prefix "PROMPT: ". Never output prefixes; those will be appended by the system.';
+  'You are a story teller. Your job is to be engaging and fun. You are telling an immersive story in which your listener makes active choices in what happens next. The listener can choose to do anything. You should not ever prompt the listener. Tell the next part of the story and leave room to let the listener respond. You must always maintain immersion. You should never break character. However, if the listener does something that is not possible or obviously ridiculous, you should respond in a grounded way. For example, if the listener tries to fly, you might say, "You try to fly, but you are not able to. You fall to the ground." The listener must also maintain immersion. They should respond as if they are the character in the story. They should not ask questions or make comments that break the immersion. If they do so, you should play it off as the listener characters thoughts. For example, if the listener says, "This is fun," you might say, "You think to yourself, "This is fun.". If the listener says "Can you add a dragon?" you might say, "You think to yourself, "I wish there was a dragon."';
 
 const PROMPT =
-  'PROMPT: What is the next output to the player? Remember that system prefixes are not shown to the player. Only output the actual text.';
+  'Below is the current story state: <STATE> \n Previous messages show what the listener has done thus far. Do not prompt the listener. As the story teller, just output the next part of the story:';
 
 export const respondToPlayer = (args: { session: session.Session }) => {
   const { session } = args;
+
+  const prompt = format.format({
+    input: PROMPT,
+    params: {
+      '<STATE>': session.state,
+    },
+  });
+
   return completion.completePrompt({
-    prompt: PROMPT,
+    prompt,
     systemContext: CONTEXT,
-    previousMessages: session,
+    previousMessages: session.messages,
   });
 };
