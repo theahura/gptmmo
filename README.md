@@ -4,10 +4,12 @@ Welcome to the GPTMMO monorepo!
 
 ## Getting Started
 
-Before installing any dependencies, you'll need `node` and `npm` installed. We
-use `nvm` for managing both, start by following [nvm's installation instructions].
+Install the following:
 
 [nvm's installation instructions]: https://github.com/nvm-sh/nvm#installing-and-updating
+[Docker](https://docs.docker.com/engine/install/) -- install the server, not desktop.
+[tfswitch](https://tfswitch.warrensbox.com/Installation/)
+[mongosh](https://www.mongodb.com/docs/mongodb-shell/install/)
 
 Second, you can install the rest of our dependencies using `npm`:
 

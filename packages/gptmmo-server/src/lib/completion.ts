@@ -1,9 +1,11 @@
 import * as together from 'together-ai';
-
+import * as validation from '@gptmmo/validation';
+import * as status from '@gptmmo/status';
 import type { Stream } from 'together-ai/streaming';
 
+// This should probably be in the session.
 const client = new together.default({
-  apiKey: 'd5aacd884b9e6e53102ec3b36dcb257f274fb4c47ccca4ec084e90c41366225c',
+  apiKey: '05a69d8f90399cceadcf77a9fe53b8c25720c071ddfe7c893f7cf76775811f56',
 });
 
 export type CompletionStream =
@@ -12,6 +14,43 @@ export type CompletionStream =
 export type Message = {
   role: 'user' | 'system' | 'assistant';
   content: string;
+};
+
+/**
+ * This is currently not type safe. Ideally there is a way to make it so.
+ */
+export const completePromptJSON = async (args: {
+  prompt: string;
+  schema: validation.SomeSchema;
+  systemContext?: string;
+  previousMessages?: Array<Message>;
+}): Promise<status.StatusOr<any>> => {
+  const { prompt, schema, systemContext, previousMessages } = args;
+
+  let messages: Array<together.Together.Chat.Completions.CompletionCreateParams.Message> =
+    [];
+
+  if (systemContext != null) {
+    messages.push({ role: 'system', content: systemContext });
+  }
+
+  if (previousMessages != null) {
+    messages = messages.concat(previousMessages);
+  }
+
+  messages.push({ role: 'user', content: prompt });
+
+  const response = await client.chat.completions.create({
+    messages,
+    model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+    response_format: { type: 'json_object', schema },
+  });
+
+  if (response?.choices?.[0]?.message?.content == null) {
+    return status.fromError(`No response content for input prompt: ${prompt}`);
+  }
+
+  return status.fromValue(JSON.parse(response.choices[0].message.content));
 };
 
 export const completePrompt = async (args: {
@@ -36,13 +75,7 @@ export const completePrompt = async (args: {
 
   return client.chat.completions.create({
     messages,
-    model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
-    max_tokens: 512,
-    temperature: 0.7,
-    top_p: 0.7,
-    top_k: 50,
-    repetition_penalty: 1,
-    stop: ['<|eot_id|>', '<|eom_id|>'],
+    model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
     stream: true,
   });
 };

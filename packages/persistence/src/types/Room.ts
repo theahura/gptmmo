@@ -5,5 +5,7 @@ export type Room = {
   name: string;
   description: string;
   lastUpdated: number;
-  connections: Record<string, primaryKeys.Room>;
+  x: number;
+  y: number;
+  z: number;
 };

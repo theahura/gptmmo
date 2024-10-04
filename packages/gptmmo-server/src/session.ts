@@ -1,153 +1,150 @@
 import * as completion from '@/lib/completion';
-import * as date from '@/lib/date';
 import * as inquirer from '@inquirer/prompts';
 import * as prompts from '@/prompts';
+import * as actions from '@/actions';
 import * as status from '@gptmmo/status';
-import * as format from '@/lib/format';
+
+import * as fs from 'fs';
+
 import type * as context from '@/context';
-import type * as persistence from '@gptmmo/persistence';
-
-const CONTEXT =
-  'You are a text adventure simulator. You respond to what the player character wants to do. You must always maintain state from one message to the next. Coherence of the story is critical, and is what you will be evaluated on. It is ok to tell the player that some actions do not work as expected or fail outright if that keeps the story more coherent. Respond like a real DM might. Do not always agree with the user.';
-
-const CONNECTED_ROOM_PROMPT =
-  'There is a connected room with the following description: <DESCRIPTION>. The room is named: <NAME>. It is connected to the current room through: <CONNECTION>';
 
 export type Session = Array<completion.Message>;
+
+const ACTIONS = {
+  LOAD_ROOM:
+    'Used when the player is entering a new location from the current room. When this occurs, the system will need to either load a preexisting room from persistence, or create a new room depending on whether the room already exists. Does not output anything to the player.',
+  UPDATE_ROOM:
+    'Used when the player action only updates the current room. When this occurs, the system will generate a new description for the current room that takes into account the most recent players actions. This should only be done whenever there are any actions that result in permanent changes to the current room, such that the room description would need to be updated. Does not output anything to the player. Should never be used after LOAD_ROOM.',
+  OUTPUT_TO_PLAYER:
+    'Used when the system needs to output text to the player. The output text will be based on the most recent player action as well as any additional steps that the simulation has taken since the last action.',
+  PROMPT_PLAYER:
+    'Used when there are no additional actions that the simulation should take. The player will be prompted for their next action. Should always be used after OUTPUT_TO_PLAYER.',
+};
 
 export const runSession = async (args: {
   serverContext: context.ServerContext;
 }): Promise<status.Status> => {
   const { serverContext } = args;
 
-  const messages: Session = [
+  /// Get the starting room if it exists, otherwise create it from scratch.
+  /// Note: at some point, starting room gen should probably go into a init
+  /// binary.
+
+  let maybeCurrentRoom = await actions.loadRoom({
+    x: 0,
+    y: 0,
+    z: 0,
+    serverContext,
+  });
+  if (!status.isOk(maybeCurrentRoom)) {
+    return maybeCurrentRoom;
+  }
+  let currentRoom = maybeCurrentRoom.value;
+
+  /// Start the session loop.
+
+  const session: Session = [
     {
       role: 'user',
-      content: CONTEXT + ' Start by creating a room for the player to begin.',
+      content: 'Start the play session now.',
+    },
+    {
+      role: 'assistant',
+      content: 'ACTION[LOAD_ROOM]: ' + currentRoom.description,
     },
   ];
 
-  /// First, check to see if there is a starting room. If not, create one.
-  /// Otherwise, load the room and age it based on when it was last updated.
-
-  const maybeStartingRoom = status.errorOnNull(
-    await serverContext.persistenceSession.Room.dataSource.findOneById('0'),
-  );
-
-  let currentRoom: persistence.Room;
-  if (!status.isOk(maybeStartingRoom)) {
-    const roomDescription = await completion.streamToLog(
-      await prompts.createRoom({}),
-    );
-    currentRoom = {
-      _id: '0',
-      name: 'Starting Room',
-      description: roomDescription,
-      lastUpdated: new Date().getTime(),
-      connections: {},
-    };
-    const maybeInserted =
-      await serverContext.persistenceSession.Room.collection.insertOne(
-        currentRoom,
-      );
-    if (!status.isOk(maybeInserted)) {
-      return maybeInserted;
-    }
-    messages.push({ role: 'assistant', content: roomDescription });
-  } else {
-    const room = maybeStartingRoom.value;
-    const timePassed = date.dateDifferenceToString(
-      new Date(),
-      new Date(room.lastUpdated),
-    );
-    const roomDescription = await completion.streamToLog(
-      await prompts.ageRoom({ description: room.description, timePassed }),
-    );
-    currentRoom = {
-      ...room,
-      description: roomDescription,
-      lastUpdated: new Date().getTime(),
-    };
-    const maybeUpdated =
-      await serverContext.persistenceSession.Room.collection.insertOne(
-        currentRoom,
-      );
-    if (!status.isOk(maybeUpdated)) {
-      return maybeUpdated;
-    }
-    messages.push({ role: 'assistant', content: roomDescription });
-
-    // Load any context that may be stored in nearby rooms.
-    for (const [connection, roomId] of Object.entries(room.connections)) {
-      const maybeConnectedRoom = status.errorOnNull(
-        await serverContext.persistenceSession.Room.dataSource.findOneById(
-          roomId,
-        ),
-      );
-      if (!status.isOk(maybeConnectedRoom)) {
-        return maybeConnectedRoom;
-      }
-      const connectedRoom = maybeConnectedRoom.value;
-      messages.push({
-        role: 'assistant',
-        content: format.format({
-          input: CONNECTED_ROOM_PROMPT,
-          params: {
-            '<DESCRIPTION>': connectedRoom.description,
-            '<NAME>': connectedRoom.name,
-            '<CONNECTION>': connection,
-          },
-        }),
-      });
-    }
-  }
-
   while (true) {
-    console.log('');
+    // Output to a debug log.
+    fs.appendFileSync(
+      './session.log',
+      JSON.stringify(session[session.length - 1]) + '\n',
+    );
 
-    /// Get feedback from the user and generate a response.
-
-    const message = await inquirer.input({ message: 'What do you do next? ' });
-    const completionStream = await completion.completePrompt({
-      prompt: message,
-      previousMessages: messages,
+    const maybeNextStep = await prompts.actionSwitch({
+      session,
+      actions: ACTIONS,
     });
-    const response = await completion.streamToLog(completionStream);
-
-    messages.push({ role: 'user', content: message });
-    messages.push({ role: 'assistant', content: response });
-
-    /// Process the LLM feedback, primarily doing things like storing or
-    /// updating state or pulling in more context.
-
-    // Output a change in the room description based on the previous
-    // description and the result of the latest action.
-    const updatedDescription = await completion.streamToString(
-      await prompts.updateRoomFromAction({
-        originalDescription: currentRoom.description,
-        playerAction: message,
-        update: response,
-        session: messages,
-      }),
-    );
-    currentRoom.description = updatedDescription;
-    currentRoom.lastUpdated = new Date().getTime();
-    await serverContext.persistenceSession.Room.collection.insertOne(
-      currentRoom,
-    );
-
-    // Determine if the user changed rooms and whether it was a preexisting
-    // room. If yes:
-    //  - load the connected rooms into the context
-    // If no:
-    //  - create a new room, give it a name, and connect it to the current room
-    const maybeDidRoomChange = status.fromValue(null);
-    if (!status.isOk(maybeDidRoomChange)) {
-      return maybeDidRoomChange;
+    if (!status.isOk(maybeNextStep)) {
+      return maybeNextStep;
     }
-    const didRoomChange = maybeDidRoomChange.value;
+    const nextStep = maybeNextStep.value;
 
-    if (didRoomChange) {
+    fs.appendFileSync('./session.log', 'ActionSwitch: ' + nextStep + '\n');
+
+    switch (nextStep) {
+      case 'LOAD_ROOM': {
+        // Figure out the location of the room to load.
+        const maybeLocation = await prompts.updateLocationFromSession({
+          x: currentRoom.x,
+          y: currentRoom.y,
+          z: currentRoom.z,
+          session,
+        });
+        if (!status.isOk(maybeLocation)) {
+          return maybeLocation;
+        }
+        const { x, y, z } = maybeLocation.value;
+
+        // Load the room.
+        const maybeCurrentRoom = await actions.loadRoom({
+          x,
+          y,
+          z,
+          serverContext,
+        });
+        if (!status.isOk(maybeCurrentRoom)) {
+          return maybeCurrentRoom;
+        }
+        currentRoom = maybeCurrentRoom.value;
+
+        session.push({
+          role: 'assistant',
+          content: 'ACTION[LOAD_ROOM]: ' + currentRoom.description,
+        });
+        break;
+      }
+      case 'UPDATE_ROOM': {
+        const updatedRoomDescription = await completion.streamToString(
+          await prompts.updateRoomFromSession({
+            originalDescription: currentRoom.description,
+          }),
+        );
+        currentRoom = {
+          ...currentRoom,
+          description: updatedRoomDescription,
+          lastUpdated: new Date().getTime(),
+        };
+        await serverContext.persistenceSession.Room.collection.insertOne(
+          currentRoom,
+        );
+        session.push({
+          role: 'assistant',
+          content: 'ACTION[UPDATE_ROOM]: ' + updatedRoomDescription,
+        });
+        break;
+      }
+      case 'OUTPUT_TO_PLAYER': {
+        const simulationResponse = await completion.streamToLog(
+          await prompts.respondToPlayer({ session }),
+        );
+        session.push({
+          role: 'assistant',
+          content: 'ACTION[OUTPUT_TO_PLAYER]: ' + simulationResponse,
+        });
+        break;
+      }
+      case 'PROMPT_PLAYER': {
+        const playerAction = await inquirer.input({
+          message: 'What do you do next? ',
+        });
+        session.push({
+          role: 'assistant',
+          content: 'ACTION[PROMPT_PLAYER]: ' + 'What do you do next?',
+        });
+        session.push({ role: 'user', content: 'USER: ' + playerAction });
+        break;
+      }
     }
   }
 };

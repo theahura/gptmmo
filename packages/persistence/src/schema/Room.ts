@@ -1,5 +1,4 @@
-import * as roomTypes from '@/types/Room';
-
+import type * as roomTypes from '@/types/Room';
 import type * as validation from '@gptmmo/validation';
 
 export const ROOM: validation.Schema<roomTypes.Room> = {
@@ -17,14 +16,16 @@ export const ROOM: validation.Schema<roomTypes.Room> = {
     lastUpdated: {
       type: 'number',
     },
-    connections: {
-      type: 'object',
-      required: [],
-      additionalProperties: {
-        type: 'string',
-      },
+    x: { 
+      type: 'number',
+    },
+    y: { 
+      type: 'number',
+    },
+    z: { 
+      type: 'number',
     },
   },
-  required: ['_id', 'name', 'description', 'lastUpdated', 'connections'],
+  required: ['_id', 'name', 'description', 'lastUpdated', 'x', 'y', 'z'],
   additionalProperties: false,
 };
