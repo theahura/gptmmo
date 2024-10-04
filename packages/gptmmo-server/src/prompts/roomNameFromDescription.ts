@@ -23,5 +23,6 @@ export const roomNameFromDescription = async (args: {
       params: { '<DESCRIPTION>': roomDescription },
     }),
     schema: SCHEMA,
+    model: 'lite',
   });
 };

@@ -1,6 +1,7 @@
 import * as status from '@gptmmo/status';
 import * as date from '@/lib/date';
 import * as prompts from '@/prompts';
+import * as logging from '@/lib/logging';
 import type * as context from '@/context';
 import type * as persistence from '@gptmmo/persistence';
 import type * as session from '@/session';
@@ -28,6 +29,7 @@ export const loadRoom = async (args: {
 
   let room: persistence.Room;
   if (!status.isOk(maybeStartingRoom)) {
+    logging.log('Room not found, creating new room');
     const maybeRoomDescription = await prompts.createRoom({ session });
     if (!status.isOk(maybeRoomDescription)) {
       return maybeRoomDescription;
@@ -51,6 +53,7 @@ export const loadRoom = async (args: {
       z,
       lastUpdated: new Date().getTime(),
     };
+    logging.log('New room: ', room);
 
     const maybeInserted =
       await serverContext.persistenceSession.Room.collection.insertOne(room);
@@ -58,6 +61,7 @@ export const loadRoom = async (args: {
       return maybeInserted;
     }
   } else {
+    logging.log('Room found, updating room');
     room = maybeStartingRoom.value;
     const timePassed = date.dateDifferenceToString(
       new Date(),
@@ -79,6 +83,7 @@ export const loadRoom = async (args: {
       description: roomDescription,
       lastUpdated: new Date().getTime(),
     };
+    logging.log('Updated room: ', room);
 
     const maybeUpdated =
       await serverContext.persistenceSession.Room.collection.updateOne(

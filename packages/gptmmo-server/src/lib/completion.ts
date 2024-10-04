@@ -16,6 +16,11 @@ export type Message = {
   content: string;
 };
 
+export const MODELS = {
+  lite: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+  smart: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+};
+
 /**
  * This is currently not type safe. Ideally there is a way to make it so.
  */
@@ -24,8 +29,9 @@ export const completePromptJSON = async (args: {
   schema: validation.SomeSchema;
   systemContext?: string;
   previousMessages?: Array<Message>;
+  model?: keyof typeof MODELS;
 }): Promise<status.StatusOr<any>> => {
-  const { prompt, schema, systemContext, previousMessages } = args;
+  const { prompt, schema, systemContext, previousMessages, model } = args;
 
   let messages: Array<together.Together.Chat.Completions.CompletionCreateParams.Message> =
     [];
@@ -42,7 +48,7 @@ export const completePromptJSON = async (args: {
 
   const response = await client.chat.completions.create({
     messages,
-    model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+    model: model ? MODELS[model] : MODELS['smart'],
     response_format: { type: 'json_object', schema },
   });
 
@@ -57,8 +63,9 @@ export const completePrompt = async (args: {
   prompt: string;
   systemContext?: string;
   previousMessages?: Array<Message>;
+  model?: keyof typeof MODELS;
 }): Promise<CompletionStream> => {
-  const { prompt, previousMessages, systemContext } = args;
+  const { prompt, previousMessages, systemContext, model } = args;
 
   let messages: Array<together.Together.Chat.Completions.CompletionCreateParams.Message> =
     [];
@@ -75,7 +82,7 @@ export const completePrompt = async (args: {
 
   return client.chat.completions.create({
     messages,
-    model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+    model: model ? MODELS[model] : MODELS['smart'],
     stream: true,
   });
 };
